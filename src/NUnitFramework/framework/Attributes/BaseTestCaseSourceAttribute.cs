@@ -1,4 +1,4 @@
-// ***********************************************************************
+﻿// ***********************************************************************
 // Copyright (c) 2008-2015 Charlie Poole
 //
 // Permission is hereby granted, free of charge, to any person obtaining
@@ -27,74 +27,57 @@ using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Compatibility;
 using NUnit.Framework.Interfaces;
-using NUnit.Framework.Internal;
-using NUnit.Framework.Attributes;
 using NUnit.Framework.Internal.Builders;
+using NUnit.Framework.Internal;
 
-namespace NUnit.Framework
+namespace NUnit.Framework.Attributes
 {
-
-
     /// <summary>
     /// TestCaseSourceAttribute indicates the source to be used to
     /// provide test cases for a test method.
     /// </summary>
-    public class TestCaseSourceAttribute : BaseTestCaseSourceAttribute
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
+    public abstract class BaseTestCaseSourceAttribute : NUnitAttribute, ITestBuilder, IImplyFixture
     {
+        private NUnitTestCaseBuilder _builder = new NUnitTestCaseBuilder();
 
-        #region Constructors
-
+        #region Properties
         /// <summary>
-        /// Construct with the name of the method, property or field that will provide data
+        /// A set of parameters passed to the method, works only if the Source Name is a method. 
+        /// If the source name is a field or property has no effect.
         /// </summary>
-        /// <param name="sourceName">The name of a static method, property or field that will provide data.</param>
-        public TestCaseSourceAttribute(string sourceName)
-        {
-            this.SourceName = sourceName;
-        }
-
+        public object[] MethodParams { get; protected set; }
         /// <summary>
-        /// Construct with a Type and name
+        /// The name of a the method, property or fiend to be used as a source
         /// </summary>
-        /// <param name="sourceType">The Type that will provide data</param>
-        /// <param name="sourceName">The name of a static method, property or field that will provide data.</param>
-        /// <param name="methodParams">A set of parameters passed to the method, works only if the Source Name is a method.
-        ///                     If the source name is a field or property has no effect.</param>
-        public TestCaseSourceAttribute(Type sourceType, string sourceName, object[] methodParams)
-        {
-            this.MethodParams = methodParams;
-            this.SourceType = sourceType;
-            this.SourceName = sourceName;
-        }
-        /// <summary>
-        /// Construct with a Type and name
-        /// </summary>
-        /// <param name="sourceType">The Type that will provide data</param>
-        /// <param name="sourceName">The name of a static method, property or field that will provide data.</param>
-        public TestCaseSourceAttribute(Type sourceType, string sourceName)
-        {
-            this.SourceType = sourceType;
-            this.SourceName = sourceName;
-        }
+        public string SourceName { get; protected set; }
 
         /// <summary>
-        /// Construct with a name
+        /// A Type to be used as a source
         /// </summary>
-        /// <param name="sourceName">The name of a static method, property or field that will provide data.</param>
-        /// <param name="methodParams">A set of parameters passed to the method, works only if the Source Name is a method.
-        ///                     If the source name is a field or property has no effect.</param>
-        public TestCaseSourceAttribute(string sourceName, object[] methodParams)
-        {
-            this.MethodParams = methodParams;
-            this.SourceName = sourceName;
-        }
+        public Type SourceType { get; protected set; }
+
         /// <summary>
-        /// Construct with a Type
+        /// Gets or sets the category associated with every fixture created from
+        /// this attribute. May be a single category or a comma-separated list.
         /// </summary>
-        /// <param name="sourceType">The type that will provide data</param>
-        public TestCaseSourceAttribute(Type sourceType)
+        public string Category { get; set; }
+
+        #endregion
+
+        #region ITestBuilder Members
+
+        /// <summary>
+        /// Construct one or more TestMethods from a given MethodInfo,
+        /// using available parameter data.
+        /// </summary>
+        /// <param name="method">The IMethod for which tests are to be constructed.</param>
+        /// <param name="suite">The suite to which the tests will be added.</param>
+        /// <returns>One or more TestMethods</returns>
+        public IEnumerable<TestMethod> BuildFrom(IMethodInfo method, Test suite)
         {
-            this.SourceType = sourceType;
+            foreach (TestCaseParameters parms in GetTestCasesFor(method))
+                yield return _builder.BuildTestMethod(method, suite, parms);
         }
 
         #endregion
@@ -102,7 +85,8 @@ namespace NUnit.Framework
         #region Helper Methods
 
         /// <summary>
-        /// Retrieves the method's signature where the source data's fields will be injected
+        /// Returns a set of ITestCaseDataItems for use as arguments
+        /// to a parameterized test method.
         /// </summary>
         /// <param name="method">The method for which data is needed.</param>
         /// <returns></returns>
@@ -122,7 +106,7 @@ namespace NUnit.Framework
                         // 1. Source is null. This is really an error but if we
                         //    throw an exception we simply get an invalid fixture
                         //    without good info as to what caused it. Passing a
-                        //    single null argument will cause an error to be
+                        //    single null argument will cause an error to be 
                         //    reported at the test level, in most cases.
                         // 2. User provided an ITestCaseData and we just use it.
                         ITestCaseData parms = item == null
@@ -138,7 +122,12 @@ namespace NUnit.Framework
                             if (args == null && item is Array)
                             {
                                 Array array = item as Array;
-                                int numParameters = method.GetParameters().Length;
+#if NETCF
+                                bool netcfOpenType = method.IsGenericMethodDefinition;
+#else
+                                bool netcfOpenType = false;
+#endif
+                                int numParameters = netcfOpenType ? array.Length : method.GetParameters().Length;
                                 if (array != null && array.Rank == 1 && array.Length == numParameters)
                                 {
                                     // Array is something like int[] - convert it to
@@ -152,6 +141,16 @@ namespace NUnit.Framework
                             // Check again if we have an object[]
                             if (args != null)
                             {
+#if NETCF
+                                if (method.IsGenericMethodDefinition)
+                                {
+                                    var mi = method.MakeGenericMethodEx(args);
+                                    if (mi == null)
+                                        throw new NotSupportedException("Cannot determine generic Type");
+                                    method = mi;
+                                }
+#endif
+
                                 var parameters = method.GetParameters();
                                 var argsNeeded = parameters.Length;
                                 var argsProvided = args.Length;
@@ -196,67 +195,30 @@ namespace NUnit.Framework
 
             return data;
         }
-        
+
+        /// <summary>
+        /// Return 
+        /// </summary>
+        /// <param name="errorMessage">message to return indicating reason why a testcase cannot be executed.</param>
+        /// <returns></returns>
+        public IEnumerable ReturnErrorAsParameter(string errorMessage)
+        {
+            var parms = new TestCaseParameters();
+            parms.RunState = RunState.NotRunnable;
+            parms.Properties.Set(PropertyNames.SkipReason, errorMessage);
+            return new TestCaseParameters[] { parms };
+        }
+
         /// <summary>
         /// Retrieves the method's signature where the source data's fields will be injected
         /// </summary>
-        /// <param name="method">The method for which data is needed.</param>
-        /// <returns></returns>
-        protected override IEnumerable GetTestCaseSource(IMethodInfo method)
-        {
-            Type sourceType = SourceType ?? method.TypeInfo.Type;
+        /// <param name="methodInfo">name of the method to be analyzed.</param>
+        /// <returns>List of test cases based on signature and data</returns>
+        protected abstract IEnumerable GetTestCaseSource(IMethodInfo methodInfo);
 
-            // Handle Type implementing IEnumerable separately
-            if (SourceName == null)
-                return Reflect.Construct(sourceType, null) as IEnumerable;
+        #endregion
 
-            MemberInfo[] members = sourceType.GetMember(SourceName,
-                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
-
-            if (members.Length == 1)
-            {
-                MemberInfo member = members[0];
-
-                var field = member as FieldInfo;
-                if (field != null)
-                    return field.IsStatic
-                        ? (MethodParams == null ? (IEnumerable)field.GetValue(null)
-                                                : ReturnErrorAsParameter(ParamGivenToField))
-                        : ReturnErrorAsParameter(SourceMustBeStatic);
-
-                var property = member as PropertyInfo;
-                if (property != null)
-                    return property.GetGetMethod(true).IsStatic
-                        ? (MethodParams == null ? (IEnumerable)property.GetValue(null, null)
-                                                : ReturnErrorAsParameter(ParamGivenToProperty))
-                        : ReturnErrorAsParameter(SourceMustBeStatic);
-
-                var m = member as MethodInfo;
-
-
-                    if (m != null)
-                    return m.IsStatic
-                        ? (MethodParams == null || m.GetParameters().Length == MethodParams.Length ? (IEnumerable)m.Invoke(null, MethodParams)
-                                                              : ReturnErrorAsParameter(NumberOfArgsDoesNotMatch))
-                        : ReturnErrorAsParameter(SourceMustBeStatic);
-            }
-
-            return null;
-        }
-
-
-        private const string SourceMustBeStatic =
-            "The sourceName specified on a TestCaseSourceAttribute must refer to a static field, property or method.";
-        private const string ParamGivenToField = "You have specified a data source field but also given a set of parameters. Fields cannot take parameters, " +
-                                                 "please revise the 3rd parameter passed to the TestCaseSourceAttribute and either remove " +
-                                                 "it or specify a method.";
-        private const string ParamGivenToProperty = "You have specified a data source property but also given a set of parameters. " +
-                                                    "Properties cannot take parameters, please revise the 3rd parameter passed to the " +
-                                                    "TestCaseSource attribute and either remove it or specify a method.";
-        private const string NumberOfArgsDoesNotMatch = "You have given the wrong number of arguments to the method in the TestCaseSourceAttribute" +
-                                                        ", please check the number of parameters passed in the object is correct in the 3rd parameter for the " +
-                                                        "TestCaseSourceAttribute and this matches the number of parameters in the target method and try again.";
-
-#endregion
     }
+
+
 }
