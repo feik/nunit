@@ -61,7 +61,7 @@ namespace NUnitLite
 
     #endregion
 
-    #region Public Methods
+        #region Public Methods
 
         #region DisplayHeader
 
@@ -306,14 +306,14 @@ namespace NUnitLite
             var status = summary.ResultState.Status;
 
             var overallResult = status.ToString();
-            if (overallResult == "Skipped")
-                overallResult = "Warning";
+            //if (overallResult == "Skipped")
+            //    overallResult = "Warning";
 
             ColorStyle overallStyle = status == TestStatus.Passed
                 ? ColorStyle.Pass
                 : status == TestStatus.Failed
                     ? ColorStyle.Failure
-                    : status == TestStatus.Skipped
+                    : status == TestStatus.Warning
                         ? ColorStyle.Warning
                         : ColorStyle.Output;
 
@@ -326,6 +326,7 @@ namespace NUnitLite
             WriteSummaryCount("  Test Count: ", summary.TestCount);
             WriteSummaryCount(", Passed: ", summary.PassCount);
             WriteSummaryCount(", Failed: ", summary.FailedCount, ColorStyle.Failure);
+            WriteSummaryCount(", Warnings: ", summary.WarningCount, ColorStyle.Warning);
             WriteSummaryCount(", Inconclusive: ", summary.InconclusiveCount);
             WriteSummaryCount(", Skipped: ", summary.TotalSkipCount);
             Writer.WriteLine();
@@ -339,8 +340,7 @@ namespace NUnitLite
             }
             if (summary.TotalSkipCount > 0)
             {
-                WriteSummaryCount("    Skipped Tests - Ignored: ", summary.IgnoreCount, ColorStyle.Warning);
-                WriteSummaryCount(", Explicit: ", summary.ExplicitCount);
+                WriteSummaryCount("    Skipped Tests - Explicit: ", summary.ExplicitCount);
                 WriteSummaryCount(", Other: ", summary.SkipCount);
                 Writer.WriteLine();
             }
