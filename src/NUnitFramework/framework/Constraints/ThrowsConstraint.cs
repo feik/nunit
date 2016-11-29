@@ -176,15 +176,16 @@ namespace NUnit.Framework.Constraints
                 else
 #endif
                 {
-                    try
-                    {
-                        invocationDescriptor.Invoke();
-                        return null;
-                    }
-                    catch (Exception ex)
-                    {
-                        return ex;
-                    }
+                    using (new IsolatedExecutionContext())
+                        try
+                        {
+                            invocationDescriptor.Invoke();
+                            return null;
+                        }
+                        catch (Exception ex)
+                        {
+                            return ex;
+                        }
                 }
             }
 

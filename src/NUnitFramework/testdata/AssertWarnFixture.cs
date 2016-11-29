@@ -1,5 +1,5 @@
-﻿// ***********************************************************************
-// Copyright (c) 2016 Charlie Poole
+// ***********************************************************************
+// Copyright (c) 2007 Charlie Poole
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -21,39 +21,24 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ***********************************************************************
 
-namespace NUnit.Framework.Interfaces
+using System;
+using NUnit.Framework;
+
+namespace NUnit.TestData
 {
-    /// <summary>
-    /// AssertionStatus enumeration represents the possible outcomes of an assertion.
-    /// The order of definition is significant, higher level values override lower
-    /// ones in determining the overall result of a test.
-    /// </summary>
-    public enum AssertionStatus
+    [TestFixture]
+    public class AssertWarnFixture
     {
-        /// <summary>
-        /// The assertion succeeded
-        /// </summary>
-        Passed,
+        [Test]
+        public void CallAssertWarnWithMessage()
+        {
+            Assert.Warn("MESSAGE");
+        }
 
-
-        /// <summary>
-        /// An assumption failed
-        /// </summary>
-        Inconclusive,
-
-        /// <summary>
-        /// A warning message was issued
-        /// </summary>
-        Warning,
-
-        /// <summary>
-        /// The assertion failed
-        /// </summary>
-        Failed,
-
-        /// <summary>
-        /// An unexpected exception was thrown
-        /// </summary>
-        Error
+        [Test]
+        public void CallAssertWarnWithMessageAndArgs()
+        {
+            Assert.Warn("MESSAGE: {0}+{1}={2}", 2, 2, 4);
+        }
     }
 }

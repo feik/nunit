@@ -250,16 +250,6 @@ namespace NUnit.Framework.Internal
         }
 #endif
 
-        /// <summary>
-        /// Clear the current context. This is provided to
-        /// prevent "leakage" of the CallContext containing
-        /// the current context back to any runners.
-        /// </summary>
-        public static void ClearCurrentContext()
-        {
-            CurrentContext = null;
-        }
-
         #endregion
 
         #region Properties
@@ -463,6 +453,36 @@ namespace NUnit.Framework.Internal
 
         #endregion
 
+        #region Static Methods
+
+        /// <summary>
+        /// Clear the current context. This is provided to
+        /// prevent "leakage" of the CallContext containing
+        /// the current context back to any runners.
+        /// </summary>
+        public static void ClearCurrentContext()
+        {
+            CurrentContext = null;
+        }
+
+        /// <summary>
+        /// Create a new context on top of the stack
+        /// </summary>
+        public static void Save()
+        {
+            CurrentContext = new TestExecutionContext(CurrentContext);
+        }
+
+        /// <summary>
+        /// Pop the stack, restoring the previous context
+        /// </summary>
+        public static void Restore()
+        {
+            CurrentContext = CurrentContext._priorContext;
+        }
+
+        #endregion
+
         #region Instance Methods
 
         /// <summary>
@@ -540,5 +560,28 @@ namespace NUnit.Framework.Internal
 #endif
 
         #endregion
+    }
+
+    /// <summary>
+    /// Used to run test code in isolation
+    /// </summary>
+    public class IsolatedExecutionContext : IDisposable
+    {
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public IsolatedExecutionContext()
+        {
+            TestExecutionContext.Save();
+            TestExecutionContext.CurrentContext.CurrentResult = TestExecutionContext.CurrentContext.CurrentTest.MakeTestResult();
+        }
+
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        public void Dispose()
+        {
+            TestExecutionContext.Restore();
+        }
     }
 }

@@ -58,6 +58,7 @@
     </Compile>
     <Compile Include="ActionAttributeFixture.cs" />
     <Compile Include="AssertCountFixture.cs" />
+    <Compile Include="AssertWarnFixture.cs" />
     <Compile Include="AssertFailFixture.cs" />
     <Compile Include="AssertIgnoreData.cs" />
     <Compile Include="AssertMultipleData.cs" />

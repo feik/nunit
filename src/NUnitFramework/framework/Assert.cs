@@ -172,6 +172,33 @@ namespace NUnit.Framework
 
         #endregion
 
+        #region Warn
+
+        /// <summary>
+        /// Issues a warning using the message and arguments provided.
+        /// </summary>
+        /// <param name="message">The message to display.</param>
+        /// <param name="args">Arguments to be used in formatting the message</param>
+        static public void Warn(string message, params object[] args)
+        {
+            if (message == null) message = string.Empty;
+            else if (args != null && args.Length > 0)
+                message = string.Format(message, args);
+
+            IssueWarning(message);
+        }
+
+        /// <summary>
+        /// Issues a warning using the message provided.
+        /// </summary>
+        /// <param name="message">The message to display.</param>
+        static public void Warn(string message)
+        {
+            IssueWarning(message);
+        }
+
+        #endregion
+
         #region Ignore
 
         /// <summary>
@@ -349,6 +376,13 @@ namespace NUnit.Framework
             // If we are outside any multiple assert block, then throw
             if (TestExecutionContext.CurrentContext.MultipleAssertLevel == 0)
                 throw new AssertionException(message);
+        }
+
+        private static void IssueWarning(string message)
+        {
+            var result = TestExecutionContext.CurrentContext.CurrentResult;
+
+            result.RecordAssertion(AssertionStatus.Warning, message, GetStackTrace());
         }
 
         // System.Envionment.StackTrace puts extra entries on top of the stack, at least in some environments

@@ -582,6 +582,38 @@ namespace NUnit.Framework.Internal
             RecordAssertion(status, message, null);
         }
 
+        /// <summary>
+        /// Set result based on any assertion results found
+        /// </summary>
+        public void SetResultFromAssertionResults()
+        {
+            var resultState = ResultState.Success;
+
+            foreach (var assertion in AssertionResults)
+            {
+
+                switch (assertion.Status)
+                {
+                    case AssertionStatus.Warning:
+
+                        if (resultState.Status == TestStatus.Inconclusive || resultState.Status == TestStatus.Passed)
+                            resultState = ResultState.Warning;
+
+                        break;
+
+                    case AssertionStatus.Failed:
+
+
+                        if (resultState.Status != TestStatus.Failed)
+                            resultState = ResultState.Failure;
+
+                        break;
+                }
+            }
+
+            SetResult(resultState);
+        }
+
         #endregion
 
         #region Helper Methods

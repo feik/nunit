@@ -75,6 +75,7 @@
     <Compile Include="Assertions\ArrayEqualsFixture.cs" />
     <Compile Include="Assertions\ArrayNotEqualFixture.cs" />
     <Compile Include="Assertions\AssertEqualsTests.cs" />
+    <Compile Include="Assertions\AssertWarnTests.cs" />
     <Compile Include="Assertions\AssertFailTests.cs" />
     <Compile Include="Assertions\AssertIgnoreTests.cs" />
     <Compile Include="Assertions\AssertInconclusiveTests.cs" />

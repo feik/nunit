@@ -62,7 +62,7 @@ namespace NUnit.Framework.Internal.Commands
             if (testMethod.HasExpectedResult)
                 NUnit.Framework.Assert.AreEqual(testMethod.ExpectedResult, result);
 
-            context.CurrentResult.SetResult(ResultState.Success);
+            context.CurrentResult.SetResultFromAssertionResults();
             // TODO: Set assert count here?
             //context.CurrentResult.AssertCount = context.AssertCount;
             return context.CurrentResult;

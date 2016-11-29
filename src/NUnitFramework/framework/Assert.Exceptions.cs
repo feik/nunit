@@ -60,13 +60,16 @@ namespace NUnit.Framework
             }
             else
 #endif
-            try
+            using (new IsolatedExecutionContext())
             {
-                code();
-            }
-            catch (Exception ex)
-            {
-                caughtException = ex;
+                try
+                {
+                    code();
+                }
+                catch (Exception ex)
+                {
+                    caughtException = ex;
+                }
             }
 
             Assert.That(caughtException, expression, message, args);
